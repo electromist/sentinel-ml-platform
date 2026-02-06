@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// → ORGANIZATION MODEL: Multi-tenant isolation boundary
+model Organization {
+  id          String       @id @default(uuid())
+  name        String
+  users       User[]
+  secrets     Secret[]
+  auditLogs   AuditLog[]
+  secureFiles SecureFile[]
+  createdAt   DateTime     @default(now())
+
+  @@index([createdAt])
+}
+
+// → USER MODEL: Organization members with role-based access
+model User {
+  id             String       @id @default(uuid())
+  email          String       @unique
+  password       String?
+  role           String       @default("MEMBER")
+  isPro          Boolean      @default(false)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([email])
+}
+
+// → SECRET MODEL: Encrypted secrets with optional expiration
+model Secret {
+  id             String       @id @default(uuid())
+  name           String
+  encryptedData  String
+  iv             String
+  authTag        String
+  expiresAt      DateTime?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([expiresAt])
+}
+
+// → AUDIT LOG MODEL: Security event tracking
+model AuditLog {
+  id             String       @id @default(uuid())
+  action         String
+  entityId       String
+  ipAddress      String?
+  userAgent      String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([action])
+}
+
+// → SECURE FILE MODEL: Client-side encrypted files in R2 storage
+model SecureFile {
+  id               String       @id @default(uuid())
+  filename         String
+  filetype         String
+  size             Int
+  storageKey       String       @unique
+  encryptedFileKey String
+  iv               String
+  expiresAt        DateTime?
+  organizationId   String
+  organization     Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt        DateTime     @default(now())
+
+  @@index([organizationId, createdAt])
+  @@index([expiresAt])
+  @@index([storageKey])
+}
