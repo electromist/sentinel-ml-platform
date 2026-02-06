@@ -1,4 +1,4 @@
-````md
+
 # 🛡️ Sentinel Platform
 
 ## Enterprise ML Security & Predictive Analytics System
