@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { encrypt, decrypt } from "./crypto";
 import { currentUser } from "@clerk/nextjs/server";
 import { getPresignedUploadUrl, getPresignedDownloadUrl } from "./r2";
+import { sendEvent } from "@/lib/kafka";
 
 // → AUTH FLOW: Verify Clerk user → sync to DB → return user with org
 async function getAuthenticatedUser() {
@@ -37,6 +38,16 @@ async function getAuthenticatedUser() {
       include: { organization: true },
     });
   }
+
+  // → KAFKA INTEGRATION: Track user presence/activity
+  // This generates the "stream" for our Anomaly Detection model
+  await sendEvent("user-activity", {
+    userId: dbUser!.id,
+    email: dbUser!.email,
+    action: "user_active",
+    timestamp: new Date().toISOString(),
+    details: "User authenticated for action",
+  });
 
   return dbUser!;
 }
@@ -76,6 +87,14 @@ export async function createSecret(formData: FormData) {
       organizationId: user.organizationId,
       expiresAt, // <-- Save it to DB
     },
+  });
+
+  // → KAFKA INTEGRATION: Track sensitive action
+  await sendEvent("user-activity", {
+    userId: user.id,
+    action: "create_secret",
+    timestamp: new Date().toISOString(),
+    details: `Created secret: ${name}`,
   });
 
   redirect("/?secretStored=true");
@@ -134,8 +153,17 @@ export async function getAuditLogs() {
 
 // → FILE UPLOAD PREPARATION FLOW: Generate presigned URL and storage key
 export async function prepareFileUpload(filename: string, filetype: string) {
-  await getAuthenticatedUser();
+  const user = await getAuthenticatedUser();
   if (!filename || !filetype) throw new Error("Filename and filetype required");
+
+  // → KAFKA INTEGRATION: Track file upload attempt
+  await sendEvent("user-activity", {
+    userId: user.id,
+    action: "file_upload_start",
+    timestamp: new Date().toISOString(),
+    details: `Uploading file: ${filename} (${filetype})`,
+  });
+
   return getPresignedUploadUrl(filename, filetype);
 }
 

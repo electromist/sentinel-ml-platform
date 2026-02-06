@@ -137,7 +137,7 @@ export default async function Home() {
         <h3>🚨 Security Audit Logs</h3>
         <div
           style={{
-            background: "#f0f0f0",ī
+            background: "#f0f0f0",
             padding: "10px",
             fontSize: "12px",
             color: "green",
