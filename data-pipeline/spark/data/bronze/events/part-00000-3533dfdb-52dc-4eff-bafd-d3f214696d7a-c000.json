@@ -1,0 +1,1 @@
+{"event_data":"{\"userId\":\"user_123\",\"action\":\"button_click\",\"timestamp\":\"2026-02-06T14:53:19.731Z\",\"details\":\"Testing Pipeline Connectivity\"}","kafka_timestamp":"2026-02-06T14:53:19.733Z","topic":"user-activity","partition":0,"offset":152}

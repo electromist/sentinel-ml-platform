@@ -1,12 +1,13 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, from_json, schema_of_json, lit
-from pyspark.sql.types import StructType, StructField, StringType, TimestampType
+from pyspark.sql.types import StructType, StructField, StringType, TimestampType2 
 
 # Spark Session
 spark = SparkSession.builder \
     .appName("RealTimeKafkaToBronze") \
     .config("spark.jars.packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0") \
     .config("spark.sql.streaming.schemaInference", "true") \
+    .config("spark.hadoop.mapreduce.fileoutputcommitter.marksuccessfuljobs", "false") \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("WARN")
